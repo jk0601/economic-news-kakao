@@ -11,8 +11,10 @@
   2) 주요 시장 지표 수집 (S&P500, 나스닥, 엔비디아, 환율, 원유 등)
   3) OpenAI GPT-4o-mini로 뉴스 요약 및 브리핑 작성
   4) Notion 데이터베이스에 자동 저장
+  5) 브리핑 내용을 docs/ 폴더에 HTML 파일로 저장 (로컬·GitHub Pages·iframe 연동용)
 
-실행하면 Notion에 "오늘의 경제 뉴스 브리핑" 페이지가 하나 생성됩니다.
+실행하면 Notion에 "오늘의 경제 뉴스 브리핑" 페이지가 하나 생성되고,
+docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
 
 
 ■ 사전 준비 (필수)
@@ -96,8 +98,9 @@
 
   정상 동작 시:
     - 콘솔에 "경제 뉴스 브리핑 시작" 메시지가 보이고
-    - 뉴스 수집 → 시장 데이터 수집 → GPT 요약 → Notion 저장 순으로 진행됩니다.
+    - 뉴스 수집 → 시장 데이터 수집 → GPT 요약 → HTML 저장(docs/) → Notion 저장 순으로 진행됩니다.
     - 마지막에 "Notion 저장 완료!" 및 페이지 URL이 출력됩니다.
+    - docs/ 에 briefing.html, news_YYYYMMDD.html 이 생성됩니다.
 
   로그는 logs 폴더에 월별로 저장됩니다 (예: logs/2026-03.log).
 
@@ -139,6 +142,8 @@
 
   .github/workflows/daily-briefing.yml - 매일 09:00 KST Actions 자동 실행
 
+  html_writer.py    - 브리핑 HTML 생성 (docs/ 저장, GitHub Pages·iframe용)
+  docs/             - 브리핑 HTML (briefing.html, news_YYYYMMDD.html), .nojekyll
   news_fetcher.py   - 뉴스 수집 (네이버, NewsAPI)
   market_fetcher.py - 시장 데이터 수집 (yfinance)
   summarizer.py     - GPT로 뉴스 요약
@@ -219,6 +224,17 @@
   [3] Actions 탭에서 워크플로가 활성화되어 있는지 확인
       (첫 push 후 수동 테스트: Actions → "Daily economic news briefing" → Run workflow)
 
+  [4] GitHub Pages 로 브리핑 HTML 공개 (외부 사이트 iframe 등에 쓸 때)
+      GitHub 웹 → 해당 저장소 → Settings → Pages
+      → Build and deployment: Deploy from a branch
+      → Branch: main, Folder: /docs  → Save
+
+      설정 후 몇 분 뒤 아래 형태로 접속할 수 있습니다 (본인 계정·저장소 이름에 맞게):
+        https://<GitHub사용자명>.github.io/<저장소명>/briefing.html
+
+      briefing.html 은 매 실행마다 덮어쓰여 최신 브리핑이 됩니다.
+      날짜별 파일은 news_YYYYMMDD.html 입니다.
+
   참고:
     - schedule 실행은 트래픽에 따라 몇 분 지연될 수 있습니다.
     - 비공개 저장소는 Actions 무료 분 제한이 있습니다. 공개 저장소는 정책이 다릅니다.
@@ -246,7 +262,8 @@
   5. config.py 열어서 API 키 입력 (apikey_how.md 참고)
   6. python main.py
 
-  → Notion에서 오늘의 경제 뉴스 브리핑 페이지 확인!
+  → Notion에서 오늘의 경제 뉴스 브리핑 페이지 확인, docs/ 에 HTML 생성
+  → GitHub에 올린 뒤 Pages([4] 참고)를 켜 두면 briefing.html 을 웹·iframe에서 사용 가능
 
 
 ================================================================================
