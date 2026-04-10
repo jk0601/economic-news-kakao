@@ -9,12 +9,15 @@
 
   1) 국내·글로벌 경제 뉴스 수집 (네이버 API + NewsAPI)
   2) 주요 시장 지표 수집 (S&P500, 나스닥, 엔비디아, 환율, 원유 등)
+     → config에 카카오 키가 있으면, 같은 시점의 시장 지표를 카카오톡 **나에게 보내기**로 전송
+       (피드 형식 우선, 실패 시 짧은 텍스트로 폴백 — 자세한 내용은 아래 "카카오톡" 절)
   3) OpenAI GPT-4o-mini로 뉴스 요약 및 브리핑 작성
   4) Notion 데이터베이스에 자동 저장
   5) 브리핑 내용을 docs/ 폴더에 HTML 파일로 저장 (로컬·GitHub Pages·iframe 연동용)
 
 실행하면 Notion에 "오늘의 경제 뉴스 브리핑" 페이지가 하나 생성되고,
 docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
+(카카오는 **뉴스 본문 브리핑이 아니라 시장 지표 알림**만 보냅니다.)
 
 
 ■ 사전 준비 (필수)
@@ -22,6 +25,7 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
   □ Python 3.8 이상 설치
   □ 필요한 API 키 5종 발급 (아래 'API 키 발급' 섹션 참고)
   □ Notion 계정
+  □ (선택) 카카오톡 나에게 보내기 — 아래 "카카오톡 나에게 보내기" 및 kakao_api_how.md
 
 
 ================================================================================
@@ -89,6 +93,10 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
 
   각 API 키 발급 방법은 "apikey_how.md" 파일에 자세히 적혀 있습니다.
 
+  (선택) 카카오톡 시장 지표 전송을 쓰려면 .config.sample.py 에 있는 대로 다음도 채웁니다:
+    KAKAO_REST_API_KEY, KAKAO_CLIENT_SECRET, KAKAO_ACCESS_TOKEN, KAKAO_REFRESH_TOKEN
+  발급·Redirect URI·동의 항목(talk_message) 등은 "kakao_api_how.md" 를 따르세요.
+
 
 [6단계] 실행
 --------------------------------------------------------------------------------
@@ -98,7 +106,9 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
 
   정상 동작 시:
     - 콘솔에 "경제 뉴스 브리핑 시작" 메시지가 보이고
-    - 뉴스 수집 → 시장 데이터 수집 → GPT 요약 → HTML 저장(docs/) → Notion 저장 순으로 진행됩니다.
+    - 뉴스 수집 → 시장 데이터 수집 → (설정 시) 카카오 나에게 보내기 →
+      GPT 요약 → HTML 저장(docs/) → Notion 저장 순으로 진행됩니다.
+    - 카카오 키가 없으면 "카카오 설정 없음" 안내만 나오고 나머지는 그대로 진행됩니다.
     - 마지막에 "Notion 저장 완료!" 및 페이지 URL이 출력됩니다.
     - docs/ 에 briefing.html, news_YYYYMMDD.html 이 생성됩니다.
 
@@ -130,6 +140,43 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
      - 페이지 우측 ... → Connections → 방금 만든 Integration 연결
      - 브라우저 URL에서 ?v= 앞 32자리 = DATABASE_ID
 
+  5) 카카오 (선택, 시장 지표만 나에게 보내기)
+     - https://developers.kakao.com 에서 앱·카카오 로그인·동의 항목 설정
+     - REST API 키, Client Secret, Access/Refresh 토큰 발급
+     - 단계별 설명은 "kakao_api_how.md" 에 있습니다.
+
+
+================================================================================
+                        카카오톡 나에게 보내기 (선택)
+================================================================================
+
+  ■ 무엇을 보내나요?
+    main.py 실행 시 **시장 지표**(주가·환율 등)만 카카오톡 「나에게 보내기」로 갑니다.
+    뉴스 요약 전문은 Notion·docs HTML 에만 있고, 카카오로는 가지 않습니다.
+
+  ■ 언제 보내나요?
+    시장 데이터를 가져온 직후입니다. (뉴스가 없어서 중간에 종료돼도, 그 전 단계까지는 실행됩니다.)
+
+  ■ 설정 방법
+    config.py 에 KAKAO_REST_API_KEY, KAKAO_CLIENT_SECRET 과
+    KAKAO_ACCESS_TOKEN 또는 KAKAO_REFRESH_TOKEN 을 넣습니다.
+    토큰 발급·갱신·앱 설정은 kakao_api_how.md 를 참고하세요.
+
+  ■ GitHub Actions 에서도 쓰려면
+    저장소 Settings → Secrets and variables → Actions 에 아래 이름으로 등록합니다
+    (워크플로의 write_config_from_env.py 가 config.py 로 넣어 줍니다):
+
+      KAKAO_REST_API_KEY
+      KAKAO_CLIENT_SECRET
+      KAKAO_ACCESS_TOKEN
+      KAKAO_REFRESH_TOKEN
+
+    Secrets 에 없으면 로컬과 같이 카카오 단계는 건너뜁니다.
+
+  ■ 시장만 따로 보내고 싶을 때
+    python kakao_sender.py
+    (프로젝트 폴더에서 실행 — market_fetcher 로 지표만 가져와 전송)
+
 
 ================================================================================
                         프로젝트 파일 구조
@@ -144,6 +191,7 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
 
   html_writer.py    - 브리핑 HTML 생성 (docs/ 저장, GitHub Pages·iframe용)
   docs/             - 브리핑 HTML (briefing.html, news_YYYYMMDD.html), .nojekyll
+  kakao_sender.py   - 카카오톡 나에게 보내기 (시장 지표, 선택)
   news_fetcher.py   - 뉴스 수집 (네이버, NewsAPI)
   market_fetcher.py - 시장 데이터 수집 (yfinance)
   summarizer.py     - GPT로 뉴스 요약
@@ -178,6 +226,11 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
   ■ "openai.AuthenticationError" 또는 API 키 오류
     → OPENAI_API_KEY를 확인하세요. sk-proj- 로 시작하는 형식이어야 합니다.
     → platform.openai.com에서 카드 등록 및 크레딧 충전이 되어 있어야 합니다.
+
+  ■ 카카오 메시지가 안 오거나 "카카오 설정 없음"만 나올 때
+    → config.py(또는 Actions Secrets)에 KAKAO_* 가 비어 있으면 전송하지 않습니다.
+    → 키를 넣었는데 실패하면: 토큰 만료 시 refresh_token 으로 갱신되는지,
+      앱에 talk_message 동의·Redirect URI 가 맞는지 kakao_api_how.md 를 확인하세요.
 
 
 ================================================================================
@@ -220,6 +273,13 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
         OPENAI_API_KEY
         NOTION_TOKEN
         NOTION_DATABASE_ID
+
+      (선택) 카카오 시장 지표 알림까지 쓰려면 같은 방식으로 추가:
+
+        KAKAO_REST_API_KEY
+        KAKAO_CLIENT_SECRET
+        KAKAO_ACCESS_TOKEN
+        KAKAO_REFRESH_TOKEN
 
   [3] Actions 탭에서 워크플로가 활성화되어 있는지 확인
       (첫 push 후 수동 테스트: Actions → "Daily economic news briefing" → Run workflow)
@@ -264,6 +324,7 @@ docs/ 에 news_YYYYMMDD.html 과 briefing.html 이 생성·갱신됩니다.
 
   → Notion에서 오늘의 경제 뉴스 브리핑 페이지 확인, docs/ 에 HTML 생성
   → GitHub에 올린 뒤 Pages([4] 참고)를 켜 두면 briefing.html 을 웹·iframe에서 사용 가능
+  → (선택) kakao_api_how.md 대로 카카오 설정 시 시장 지표가 나에게 보내기로 전송
 
 
 ================================================================================
