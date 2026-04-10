@@ -36,6 +36,8 @@ ENV/
 # === 로그·실행 산출물 ===
 logs/
 *.log
+# 예전 HTML 출력 경로 (현재는 docs/ 만 사용)
+newdata/
 
 # === 테스트·도구 ===
 .pytest_cache/

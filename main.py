@@ -13,6 +13,7 @@ from market_fetcher import fetch_market_data
 from kakao_sender import send_market_briefing_to_me
 from summarizer import summarize_news_with_gpt
 from notion_writer import save_to_notion
+from html_writer import save_briefing_html
 
 
 def setup_log_directory():
@@ -60,7 +61,10 @@ def run():
         # Step 3. GPT-4o-mini 요약
         summary = summarize_news_with_gpt(korean_news, global_news)
 
-        # Step 4. Notion 저장
+        # Step 4. HTML 저장 (docs/, Pages/iframe용 briefing.html)
+        save_briefing_html(summary, korean_news, global_news, market_data)
+
+        # Step 5. Notion 저장
         success = save_to_notion(summary, korean_news, global_news, market_data)
 
         if success:
