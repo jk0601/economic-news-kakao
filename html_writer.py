@@ -243,7 +243,7 @@ def save_briefing_html(summary_text, korean_news, global_news, market_data) -> O
 </head>
 <body>
 <div class="sheet">
-  <h1><img src="img/eco.png" alt="favicon" style="width: 20px; height: 20px;"> 경제 뉴스 브리핑 — {html.escape(today_kr)} ({html.escape(weekday)})</h1>
+  <h1><img src="img/eco.png" alt="favicon" style="width: 20px; height: 20px;vertical-align: middle;"> 경제 뉴스 브리핑 — {html.escape(today_kr)} ({html.escape(weekday)})</h1>
   <div class="meta">{html.escape(meta)}</div>
   <h2>📊 오늘의 시장 지표</h2>
   {_market_rows_html(market_data)}
