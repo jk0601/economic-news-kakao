@@ -206,7 +206,28 @@ curl -X POST "https://kauth.kakao.com/oauth/token" \
 
 ### 4-3. 3단계: Refresh Token으로 Access Token 갱신
 
-Access Token이 만료되면 Refresh Token으로 새 Access Token을 받습니다.
+**한 줄 요약:** 이미 **4-2 응답에서 저장해 둔 `refresh_token`** 과 REST API 키·Client Secret을 넣어 **같은 토큰 URL**에 `POST`하면, 카카오가 **새 `access_token`**(및 경우에 따라 새 `refresh_token`)을 JSON으로 돌려줍니다. 그중 `access_token` 값을 `config.py`의 `KAKAO_ACCESS_TOKEN`에 다시 넣으면 됩니다.
+
+#### 전제 조건
+
+- **4-2에서 한 번이라도** 토큰 발급을 성공했고, 그때 받은 **`refresh_token` 문자열**을 메모장 등에 저장해 두었을 것.
+- `refresh_token`이 없거나 만료(대략 2개월·카카오 정책 따름)면 이 방법으로는 갱신할 수 없습니다. 그때는 **4-1부터 다시** 로그인해서 `code` → 4-2로 새 토큰 세트를 받아야 합니다.
+
+#### 무엇을 “받는” 건가요?
+
+| 용어 | 의미 |
+|------|------|
+| 요청에 넣는 것 | 예전에 받아 둔 **`refresh_token`** (갱신용 비밀번호 같은 값) |
+| 응답으로 오는 것 | **새 `access_token`** (API 호출에 쓰는 값, 다시 약 6시간 유효) |
+| 가끔 같이 오는 것 | 새 **`refresh_token`** — 응답에 있으면 그 값으로 기존 refresh를 **교체 저장**하는 것이 안전합니다. |
+
+즉, “refresh access_token을 받는다”기보다 **“refresh_token을 제시하고, 서버가 새 access_token을 발급한다”**고 이해하면 됩니다.
+
+#### 직접 호출하는 방법 (cURL)
+
+1. 아래 예시에서 `YOUR_REST_API_KEY`, `YOUR_REFRESH_TOKEN`, `YOUR_CLIENT_SECRET`을 **본인 값으로만** 바꿉니다. (따옴표 안에 그대로 붙여넣기. 값에 `&` 등 특수문자가 있으면 URL 인코딩이 필요할 수 있습니다.)
+2. **터미널(CMD, PowerShell, macOS 터미널 등)**에서 한 번에 실행합니다.
+3. 화면에 **JSON 한 덩어리**가 출력되면 성공입니다.
 
 **엔드포인트:**
 ```
@@ -219,10 +240,10 @@ POST https://kauth.kakao.com/oauth/token
 |----------|-----|
 | grant_type | `refresh_token` |
 | client_id | REST API 키 |
-| refresh_token | 저장해 둔 Refresh Token |
+| refresh_token | 4-2에서 저장해 둔 Refresh Token |
 | client_secret | Client Secret |
 
-**cURL 예시:**
+**cURL 예시 (Git Bash / macOS / Linux):**
 ```bash
 curl -X POST "https://kauth.kakao.com/oauth/token" \
   -H "Content-Type: application/x-www-form-urlencoded;charset=utf-8" \
@@ -231,6 +252,38 @@ curl -X POST "https://kauth.kakao.com/oauth/token" \
   -d "refresh_token=YOUR_REFRESH_TOKEN" \
   -d "client_secret=YOUR_CLIENT_SECRET"
 ```
+
+**Windows PowerShell에서 `curl`이 이상하면** `curl.exe`로 실행해 보세요:
+```powershell
+curl.exe -X POST "https://kauth.kakao.com/oauth/token" `
+  -H "Content-Type: application/x-www-form-urlencoded;charset=utf-8" `
+  -d "grant_type=refresh_token" `
+  -d "client_id=YOUR_REST_API_KEY" `
+  -d "refresh_token=YOUR_REFRESH_TOKEN" `
+  -d "client_secret=YOUR_CLIENT_SECRET"
+```
+
+**응답 예시 (발췌):**
+```json
+{
+  "token_type": "bearer",
+  "access_token": "새로_받은_액세스_토큰...",
+  "expires_in": 21599,
+  "refresh_token": "새로_줄_수도_있는_리프레시...",
+  "refresh_token_expires_in": 5184000
+}
+```
+
+**그다음 할 일**
+
+1. JSON에서 **`access_token`** 값만 복사 → `config.py`의 `KAKAO_ACCESS_TOKEN`에 붙여넣기.
+2. **`refresh_token` 키가 응답에 있으면** 그 값도 복사 → `KAKAO_REFRESH_TOKEN`에 덮어쓰기.
+3. 저장 후 `python main.py` 또는 `python kakao_sender.py`로 전송이 되는지 확인.
+
+#### 이 프로젝트에서는 (수동 cURL 없이)
+
+`kakao_sender.py`의 `_refresh_access_token()`이 **위와 동일한 POST**를 코드로 호출합니다. `config.py`에 **`KAKAO_REFRESH_TOKEN`(과 REST 키·시크릿)**만 올바르게 있으면, **access가 만료된 뒤에도** `main.py` / `kakao_sender.py` 실행 시 자동으로 새 access를 받아 다시 보내기를 시도합니다.  
+수동 cURL은 **자동 갱신이 실패할 때** 원인 확인용으로 쓰면 됩니다.
 
 ---
 
