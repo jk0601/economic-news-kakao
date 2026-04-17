@@ -5,7 +5,7 @@ name: Daily economic briefing
 on:
   schedule:
     # UTC 00:00 ≈ KST 09:00 (한국은 일광절약 없음)
-    - cron: "0 0 * * *"
+    - cron: "0 21 * * *"
   workflow_dispatch:
 
 jobs:
